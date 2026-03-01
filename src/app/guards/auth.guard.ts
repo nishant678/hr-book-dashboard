@@ -1,8 +1,8 @@
 import { inject } from '@angular/core';
-import { CanActivateChildFn, Router } from '@angular/router';
+import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
-export const authGuard: CanActivateChildFn = () => {
+export const authGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
@@ -11,4 +11,27 @@ export const authGuard: CanActivateChildFn = () => {
   }
 
   return router.parseUrl('/login');
+};
+
+export const roleGuard: CanActivateFn = (route, state) => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (!authService.isAuthenticated()) {
+    return router.parseUrl('/login');
+  }
+
+  const requiredRoles = route.data['roles'] as string[];
+  const userRole = authService.getUserRole();
+
+  if (userRole && requiredRoles.includes(userRole)) {
+    return true;
+  }
+
+  // Redirect based on role
+  if (userRole === 'MASTER_ADMIN') {
+    return router.parseUrl('/super-admin');
+  } else {
+    return router.parseUrl('/company-admin');
+  }
 };
